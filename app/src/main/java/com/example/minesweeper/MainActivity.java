@@ -22,7 +22,7 @@ public class MainActivity extends AppCompatActivity {
         cell_tvs = new ArrayList<>();
 
         LayoutInflater li = LayoutInflater.from(this);
-        GridLayout grid = findViewById(R.id.gridLayout01);
+        GridLayout grid = findViewById(R.id.gridLayout);
         for (int i = 0; i<=9; i++) {
             for (int j=0; j<=7; j++) {
                 TextView tv = (TextView) li.inflate(R.layout.custom_cell_layout, grid, false);
