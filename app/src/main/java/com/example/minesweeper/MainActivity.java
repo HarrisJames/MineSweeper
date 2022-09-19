@@ -6,10 +6,9 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.widget.Spinner;
 import android.widget.TextView;
+import java.util.Random;
 
-import java.util.ArrayList;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -44,8 +43,20 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         updateFlags();
-
-        //populate flags
+        placeFlags();
+    }
+    public void placeFlags(){
+        Random rand = new Random();
+        int toPlace = flagsLeft;
+        while(toPlace > 0){
+            int i = rand.nextInt(10);
+            int j = rand.nextInt(8);
+            if(cell_tvs[i][j].getText().equals("-1")) {
+                cell_tvs[i][j].setText("\uD83D\uDCA3");
+                cell_tvs[i][j].setTextColor(Color.argb(0,0,0,0));
+                toPlace--;
+            }
+        }
     }
 
     public void updateFlags(){
@@ -92,6 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void onCellClick(View view){
         TextView tv = (TextView) view;
+        if(!running) running = true;
         int i = findI(tv);
         int j = findJ(tv);
         if(!flagging){
