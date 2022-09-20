@@ -13,6 +13,7 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     private TextView[][] cell_tvs;
+    private boolean[][] dugCells;
     private boolean flagging = false;
     private int flagsLeft = 4;
     private boolean running;
@@ -24,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         cell_tvs = new TextView[10][8];
+        dugCells = new boolean[10][8];
 
         LayoutInflater li = LayoutInflater.from(this);
         GridLayout grid = findViewById(R.id.gridLayout);
@@ -43,9 +45,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         updateFlags();
-        placeFlags();
+        placeMines();
     }
-    public void placeFlags(){
+    public void placeMines(){
         Random rand = new Random();
         int toPlace = flagsLeft;
         while(toPlace > 0){
@@ -53,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
             int j = rand.nextInt(8);
             if(cell_tvs[i][j].getText().equals("-1")) {
                 cell_tvs[i][j].setText("\uD83D\uDCA3");
-                cell_tvs[i][j].setTextColor(Color.argb(0,0,0,0));
+                //cell_tvs[i][j].setTextColor(Color.argb(0,0,0,0));
                 toPlace--;
             }
         }
@@ -79,8 +81,52 @@ public class MainActivity extends AppCompatActivity {
 
     public void dig(int i, int j){
         TextView tv = cell_tvs[i][j];
+        int touching = 0;
+        dugCells[i][j] = true;
+        if(tv.getText().equals("\uD83D\uDEA9")){
+            //trying to dig flag
+        }
+        else if(tv.getText().equals("\uD83D\uDCA3")){
+            //Dug Bomb, Game Over!
+        }
+        else{
+            if(i > 0) {
+                if (j > 0 && !dugCells[i-1][j-1] && cell_tvs[i - 1][j - 1].getText().equals("\uD83D\uDCA3")) touching++;
+                if (!dugCells[i-1][j]&&cell_tvs[i - 1][j].getText().equals("\uD83D\uDCA3")) touching++;
+                if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && cell_tvs[i - 1][j + 1].getText().equals("\uD83D\uDCA3")) touching++;
+            }
+
+            if(j > 0 && !dugCells[i][j-1] && cell_tvs[i][j-1].getText().equals("\uD83D\uDCA3")) touching++;
+            if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] &&cell_tvs[i][j+1].getText().equals("\uD83D\uDCA3")) touching++;
+
+            if(i < cell_tvs.length-1) {
+                if (j > 0 && !dugCells[i+1][j-1] &&cell_tvs[i + 1][j - 1].getText().equals("\uD83D\uDCA3")) touching++;
+                if (!dugCells[i+1][j]&&cell_tvs[i + 1][j].getText().equals("\uD83D\uDCA3")) touching++;
+                if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && cell_tvs[i + 1][j + 1].getText().equals("\uD83D\uDCA3")) touching++;
+            }
+
+
+            if(touching == 0){
+                if(i > 0) {
+                    if (j > 0 && !dugCells[i-1][j-1] && cell_tvs[i - 1][j - 1].getText().equals("-1")) dig(i-1, j-1);
+                    if (!dugCells[i-1][j] && cell_tvs[i - 1][j].getText().equals("-1")) dig(i-1, j);
+                    if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && cell_tvs[i - 1][j + 1].getText().equals("-1")) dig(i-1,j+1);
+                }
+                if(j > 0 && !dugCells[i][j-1] && cell_tvs[i][j-1].getText().equals("-1")) dig(i, j-1);
+                if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] && cell_tvs[i][j+1].getText().equals("-1")) dig(i,j+1);
+                if(i < cell_tvs.length-1) {
+                    if (j > 0 && !dugCells[i+1][j-1] && cell_tvs[i + 1][j - 1].getText().equals("-1")) dig(i+1, j-1);
+                    if (!dugCells[i+1][j] && cell_tvs[i + 1][j].getText().equals("-1")) dig(i+1, j);
+                    if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && cell_tvs[i + 1][j + 1].getText().equals("-1")) dig(i+1, j+1);
+                }
+                tv.setTextColor(Color.LTGRAY);
+            }
+            else{
+                tv.setText(String.valueOf(touching));
+                tv.setTextColor(Color.DKGRAY);
+            }
+        }
         tv.setBackgroundColor(Color.LTGRAY);
-        tv.setTextColor(Color.LTGRAY);
     }
 
     public int findI(TextView tv){
@@ -109,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
         if(!flagging){
             dig(i, j);
         }
-        else if(tv.getText().equals("-1")){
+        else if(!dugCells[i][j]){
             if(tv.getText().toString().equals("\uD83D\uDEA9")) {
                 tv.setText("-1");
                 flagsLeft++;
