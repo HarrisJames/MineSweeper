@@ -2,8 +2,11 @@ package com.example.minesweeper;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
+
+import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.os.Handler;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.TextView;
@@ -13,18 +16,25 @@ import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     private TextView[][] cell_tvs;
+    private int clock = 0;
     private boolean[][] dugCells;
     private boolean[][] bombs;
     private boolean flagging = false;
     private int flagsLeft = 4;
     private boolean running;
-    private boolean gameWon;
+    private boolean gameOver;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        if (savedInstanceState != null) {
+            clock = savedInstanceState.getInt("clock");
+            running = savedInstanceState.getBoolean("running");
+        }
+
         cell_tvs = new TextView[10][8];
         dugCells = new boolean[10][8];
         bombs = new boolean[10][8];
@@ -48,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         }
         updateFlags();
         placeMines();
+        runTimer();
     }
     public void placeMines(){
         Random rand = new Random();
@@ -58,12 +69,29 @@ public class MainActivity extends AppCompatActivity {
             if(!bombs[i][j]) {
                 bombs[i][j] = true;
                 cell_tvs[i][j].setText("\uD83D\uDCA3");
-                //cell_tvs[i][j].setTextColor(Color.argb(0,0,0,0));
+                cell_tvs[i][j].setTextColor(Color.argb(0,0,0,0));
                 toPlace--;
             }
         }
     }
 
+
+    private void runTimer() {
+        final TextView timeView = (TextView) findViewById(R.id.timer);
+        final Handler handler = new Handler();
+
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                int seconds = clock%60;
+                timeView.setText(String.valueOf(seconds));
+                if (running) {
+                    clock++;
+                }
+                handler.postDelayed(this, 1000);
+            }
+        });
+    }
     public void updateFlags(){
         TextView flags = findViewById(R.id.flagsLeft);
         flags.setText(String.valueOf(flagsLeft));
@@ -86,48 +114,41 @@ public class MainActivity extends AppCompatActivity {
         TextView tv = cell_tvs[i][j];
         int touching = 0;
         dugCells[i][j] = true;
-        if(tv.getText().equals("\uD83D\uDEA9")){
-            //trying to dig flag
+
+        if(i > 0) {
+            if (j > 0 && !dugCells[i-1][j-1] && bombs[i - 1][j - 1]) touching++;
+            if (!dugCells[i-1][j]&& bombs[i - 1][j]) touching++;
+            if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && bombs[i - 1][j + 1]) touching++;
         }
-        else if(tv.getText().equals("\uD83D\uDCA3")){
-            //Dug Bomb, Game Over!
+
+        if(j > 0 && !dugCells[i][j-1] && bombs[i][j-1]) touching++;
+        if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] &&bombs[i][j+1]) touching++;
+
+        if(i < cell_tvs.length-1) {
+            if (j > 0 && !dugCells[i+1][j-1] &&bombs[i + 1][j - 1]) touching++;
+            if (!dugCells[i+1][j]&&bombs[i + 1][j]) touching++;
+            if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && bombs[i + 1][j + 1]) touching++;
+        }
+
+
+        if(touching == 0){
+            if(i > 0) {
+                if (j > 0 && !dugCells[i-1][j-1] && cell_tvs[i - 1][j - 1].getText().equals("-1")) dig(i-1, j-1);
+                if (!dugCells[i-1][j] && cell_tvs[i - 1][j].getText().equals("-1")) dig(i-1, j);
+                if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && cell_tvs[i - 1][j + 1].getText().equals("-1")) dig(i-1,j+1);
+            }
+            if(j > 0 && !dugCells[i][j-1] && cell_tvs[i][j-1].getText().equals("-1")) dig(i, j-1);
+            if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] && cell_tvs[i][j+1].getText().equals("-1")) dig(i,j+1);
+            if(i < cell_tvs.length-1) {
+                if (j > 0 && !dugCells[i+1][j-1] && cell_tvs[i + 1][j - 1].getText().equals("-1")) dig(i+1, j-1);
+                if (!dugCells[i+1][j] && cell_tvs[i + 1][j].getText().equals("-1")) dig(i+1, j);
+                if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && cell_tvs[i + 1][j + 1].getText().equals("-1")) dig(i+1, j+1);
+            }
+            tv.setTextColor(Color.LTGRAY);
         }
         else{
-            if(i > 0) {
-                if (j > 0 && !dugCells[i-1][j-1] && bombs[i - 1][j - 1]) touching++;
-                if (!dugCells[i-1][j]&& bombs[i - 1][j]) touching++;
-                if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && bombs[i - 1][j + 1]) touching++;
-            }
-
-            if(j > 0 && !dugCells[i][j-1] && bombs[i][j-1]) touching++;
-            if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] &&bombs[i][j+1]) touching++;
-
-            if(i < cell_tvs.length-1) {
-                if (j > 0 && !dugCells[i+1][j-1] &&bombs[i + 1][j - 1]) touching++;
-                if (!dugCells[i+1][j]&&bombs[i + 1][j]) touching++;
-                if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && bombs[i + 1][j + 1]) touching++;
-            }
-
-
-            if(touching == 0){
-                if(i > 0) {
-                    if (j > 0 && !dugCells[i-1][j-1] && cell_tvs[i - 1][j - 1].getText().equals("-1")) dig(i-1, j-1);
-                    if (!dugCells[i-1][j] && cell_tvs[i - 1][j].getText().equals("-1")) dig(i-1, j);
-                    if (j < cell_tvs[i].length-1 && !dugCells[i-1][j+1] && cell_tvs[i - 1][j + 1].getText().equals("-1")) dig(i-1,j+1);
-                }
-                if(j > 0 && !dugCells[i][j-1] && cell_tvs[i][j-1].getText().equals("-1")) dig(i, j-1);
-                if(j < cell_tvs[i].length-1 && !dugCells[i][j+1] && cell_tvs[i][j+1].getText().equals("-1")) dig(i,j+1);
-                if(i < cell_tvs.length-1) {
-                    if (j > 0 && !dugCells[i+1][j-1] && cell_tvs[i + 1][j - 1].getText().equals("-1")) dig(i+1, j-1);
-                    if (!dugCells[i+1][j] && cell_tvs[i + 1][j].getText().equals("-1")) dig(i+1, j);
-                    if (j < cell_tvs[i].length-1 && !dugCells[i+1][j+1] && cell_tvs[i + 1][j + 1].getText().equals("-1")) dig(i+1, j+1);
-                }
-                tv.setTextColor(Color.LTGRAY);
-            }
-            else{
-                tv.setText(String.valueOf(touching));
-                tv.setTextColor(Color.DKGRAY);
-            }
+            tv.setText(String.valueOf(touching));
+            tv.setTextColor(Color.DKGRAY);
         }
         tv.setBackgroundColor(Color.LTGRAY);
     }
@@ -150,25 +171,59 @@ public class MainActivity extends AppCompatActivity {
         return -1;
     }
 
+    public void checkForWin(){
+        for(int i = 0; i < cell_tvs.length; i++){
+            for(int j = 0; j < cell_tvs[i].length; j++){
+                if(!bombs[i][j] && !dugCells[i][j]) return;
+            }
+        }
+        System.out.println("through");
+        running = false;
+        Intent intent = new Intent(this, GameOver.class);
+        intent.putExtra("com.example.minesweeper.gameWon", (boolean)true);
+        TextView clockTV = (TextView) findViewById(R.id.timer);
+        intent.putExtra("com.example.minesweeper.time", clockTV.getText());
+        startActivity(intent);
+    }
     public void onCellClick(View view){
         TextView tv = (TextView) view;
-        if(!running) running = true;
+        if(!running && !gameOver) running = true;
+        if(!running && gameOver){
+            Intent intent = new Intent(this, GameOver.class);
+            intent.putExtra("com.example.minesweeper.gameWon", (boolean)false);
+            TextView clockTV = (TextView) findViewById(R.id.timer);
+            intent.putExtra("com.example.minesweeper.time", clockTV.getText());
+            startActivity(intent);
+        }
         int i = findI(tv);
         int j = findJ(tv);
         if(!flagging){
-            dig(i, j);
+            if(bombs[i][j]){
+                running = false;
+                gameOver = true;
+                cell_tvs[i][j].setTextColor(Color.BLACK);
+            }
+            else dig(i, j);
         }
         else if(!dugCells[i][j]){
             if(tv.getText().toString().equals("\uD83D\uDEA9")) {
-                if(bombs[i][j]) tv.setText("\uD83D\uDCA3");
-                else tv.setText("-1");
+                if(bombs[i][j]){
+                    tv.setText("\uD83D\uDCA3");
+                    tv.setTextColor(Color.argb(0,0,0,0));
+                }
+                else {
+                    tv.setText("-1");
+                    tv.setTextColor(Color.rgb(23, 212, 64));
+                }
                 flagsLeft++;
             }
             else if(flagsLeft > 0){
                 tv.setText("\uD83D\uDEA9");
+                tv.setTextColor(Color.BLACK);
                 flagsLeft--;
             }
             updateFlags();
         }
+        if(!gameOver) checkForWin();
     }
 }
